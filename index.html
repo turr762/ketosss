@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pemilihan Ketua OSIS</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+    h1 { text-align: center; }
+    button { margin: 5px; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    .add { background-color: #4e73df; color: white; border: none; }
+    .subtract { background-color: #e74a3b; color: white; border: none; }
+    select, input[type=number] {
+      margin-top: 10px;
+      padding: 7px;
+      font-size: 16px;
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Voting Ketua OSIS 2025</h1>
+
+<canvas id="voteChart" height="200"></canvas>
+
+<label for="candidate">Pilih Kandidat:</label>
+<select id="candidate">
+  <option value="Andi">Andi</option>
+  <option value="Budi">Budi</option>
+  <option value="Citra">Citra</option>
+  <option value="Dedi">Dedi</option>
+  <option value="Euis">Euis</option>
+  <option value="Fajar">Fajar</option>
+  <option value="Gina">Gina</option>
+  <option value="Hasan">Hasan</option>
+</select>
+
+<input type="number" id="votes" min="1" value="1" />
+
+<button class="add">Tambah Suara</button>
+<button class="subtract">Kurangi Suara</button>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBnBeBy-blPnmSwd-Czt0cPzdAPiMm5ezg",
+    authDomain: "ketos-test1.firebaseapp.com",
+    databaseURL: "https://ketos-test1-default-rtdb.firebaseio.com",
+    projectId: "ketos-test1",
+    storageBucket: "ketos-test1.firebasestorage.app",
+    messagingSenderId: "339078655448",
+    appId: "1:339078655448:web:bf903285194c091a1096ad",
+    measurementId: "G-XGXMR3QJL6"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const candidates = ['Andi', 'Budi', 'Citra', 'Dedi', 'Euis', 'Fajar', 'Gina', 'Hasan'];
+  const votes = new Array(candidates.length).fill(0);
+
+  // Setup Chart.js
+  const ctx = document.getElementById('voteChart').getContext('2d');
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: candidates,
+      datasets: [{
+        label: 'Jumlah Suara',
+        data: votes,
+        backgroundColor: ['#4e73df','#1cc88a','#e74a3b','#f6c23e','#36b9cc','#a569bd','#f1948a','#5d6d7e']
+      }]
+    },
+    options: {
+      scales: { y: { beginAtZero: true, stepSize: 1 } },
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  // Listen realtime updates dari Firebase
+  const votesRef = db.ref('votes');
+  votesRef.on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      candidates.forEach((c, i) => {
+        votes[i] = data[c] || 0;
+      });
+      chart.data.datasets[0].data = votes;
+      chart.update();
+    }
+  });
+
+  // Tambah suara
+  document.querySelector('.add').onclick = () => {
+    const selected = document.getElementById('candidate').value;
+    const val = parseInt(document.getElementById('votes').value) || 1;
+    const ref = db.ref('votes/' + selected);
+    ref.get().then(snap => {
+      const current = snap.val() || 0;
+      ref.set(current + val);
+    });
+  };
+
+  // Kurangi suara
+  document.querySelector('.subtract').onclick = () => {
+    const selected = document.getElementById('candidate').value;
+    const val = parseInt(document.getElementById('votes').value) || 1;
+    const ref = db.ref('votes/' + selected);
+    ref.get().then(snap => {
+      const current = snap.val() || 0;
+      const newVal = Math.max(current - val, 0);
+      ref.set(newVal);
+    });
+  };
+</script>
+
+</body>
+</html>
